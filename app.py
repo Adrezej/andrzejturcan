@@ -1,45 +1,35 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'  # SQLite database file
+db = SQLAlchemy(app)
 
 
-class PhoneBot:
-    def __init__(self):
-        self.phone_list = {
-            'Phone1': 50,
-            'Phone2': 60,
-            'Phone3': 45,
-            'Phone4': 70,
-            'Phone5': 55
-        }
-
-    def check_phone_price(self, user_price, user_phone):
-        if user_phone in self.phone_list:
-            phone_price = self.phone_list[user_phone]
-            if 40 <= user_price <= 70 and user_price >= phone_price:
-                return f"Модель {user_phone} стоит {phone_price} евро."
-            else:
-                return "Извините, указанная цена вне диапазона или недостаточна для выбранного телефона."
-        else:
-            return "Извините, этого телефона в списке нет."
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    phone = db.Column(db.String(12), nullable=False)  # Updated to store phone numbers
 
 
 @app.route('/')
 def index():
-    return render_template('index.html', phone_list=PhoneBot().phone_list)
+    return render_template('phone_form.html')
 
 
-@app.route('/send_query', methods=['POST'])
-def send_query():
-    data = request.json
-    user_price = data['user_price']
-    user_phone = data['user_phone']
+@app.route('/', methods=['POST'])
+def process_form():
+    name = request.form.get('name')
+    phone = request.form.get('phone')
 
-    phone_bot = PhoneBot()
-    result = phone_bot.check_phone_price(user_price, user_phone)
+    # Сохраняем данные в базу данных
+    user = User(name=name, phone=phone)
+    db.session.add(user)
+    db.session.commit()
 
-    return jsonify({'result': result})
+    return f'Thank you, {name}! Your phone number ({phone}) has been saved to the database.'
 
 
 if __name__ == '__main__':
+    db.create_all()
     app.run(debug=True)
