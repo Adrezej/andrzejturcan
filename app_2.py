@@ -14,7 +14,7 @@ class User(db.Model):
 
 @app.route('/')
 def index():
-    return render_template('phone_form.html')
+    return render_template('index.html')
 
 
 @app.route('/', methods=['POST'])
